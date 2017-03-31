@@ -8,18 +8,20 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 
-#define MAJOR_NUMBER 65
+#define MAJOR_NUMBER 66
 #define DEV_SIZE 4 * 1024 * 1024
 
 /* forward declaration */
 int bytes_open(struct inode *inode, struct file *filep);
 int bytes_release(struct inode *inode, struct file *filep);
+loff_t bytes_llseek(struct file* filep, loff_t offset, int whence);
 ssize_t bytes_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
 ssize_t bytes_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
 static void bytes_exit(void);
 
 /* definition of file_operation structure */
 struct file_operations bytes_fops = {
+  llseek: bytes_llseek,
   read: bytes_read,
   write: bytes_write,
   open: bytes_open,
@@ -37,6 +39,25 @@ int bytes_open(struct inode *inode, struct file *filep)
 int bytes_release(struct inode *inode, struct file *filep)
 {
   return 0; // always successful
+}
+
+loff_t bytes_llseek(struct file* filep, loff_t offset, int whence)
+{
+  loff_t new_pos = 0;
+  switch (whence) 
+  {
+    case 0: new_pos = offset;  // SEEK_SET
+      break;
+    case 1: new_pos = filep->f_pos + offset;  // SEEK_CUR
+      break;
+    case 2: new_pos = DEV_SIZE + offset;  // SEEK_END
+      break;
+    default: return -EINVAL;
+  }
+  if (new_pos < 0) return -EINVAL;
+  if (new_pos > DEV_SIZE) new_pos = DEV_SIZE;
+  filep->f_pos = new_pos;
+  return new_pos;
 }
 
 ssize_t bytes_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
@@ -69,7 +90,7 @@ static int bytes_init(void)
 {
   int result;
   // register the device
-  result = register_chrdev(MAJOR_NUMBER, "bytes", &bytes_fops);
+  result = register_chrdev(MAJOR_NUMBER, "lcd", &bytes_fops);
   if (result < 0) {
     return result;
   }
@@ -100,7 +121,7 @@ static void bytes_exit(void)
   }
 
   // unregister the device
-  unregister_chrdev(MAJOR_NUMBER, "bytes");
+  unregister_chrdev(MAJOR_NUMBER, "lcd");
   printk(KERN_ALERT "bytes device module is unloaded\n");
 }
 
