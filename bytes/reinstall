@@ -1,6 +1,6 @@
 #!/bin/bash
 
 make
-sudo rmmod bytes.ko
-sudo insmod bytes.ko
+sudo rmmod lcd.ko
+sudo insmod lcd.ko
 
