@@ -9,10 +9,16 @@
 #include <asm/uaccess.h>
 #include <linux/ioctl.h>
 
+struct dev_msg_t {
+  char data[100];
+};
+
 #define MAJOR_NUMBER 66
 #define DEV_SIZE 4 * 1024 * 1024
 #define LCD_IOC_TYPE 'k'
 #define LCD_IOC_HELLO _IO(LCD_IOC_TYPE, 1)
+#define LCD_IOC_WRITE _IOW(LCD_IOC_TYPE, 2, struct dev_msg_t)
+#define LCD_IOC_READ _IOR(LCD_IOC_TYPE, 3, struct dev_msg_t)
 
 /* forward declaration */
 int lcd_open(struct inode *inode, struct file *filep);
@@ -35,6 +41,7 @@ struct file_operations lcd_fops = {
 
 char *lcd_data = NULL;
 size_t stored = 0;
+struct dev_msg_t dev_msg;
 
 int lcd_open(struct inode *inode, struct file *filep)
 {
@@ -48,10 +55,20 @@ int lcd_release(struct inode *inode, struct file *filep)
 
 long lcd_ioctl(struct file* filep, unsigned int cmd, unsigned long arg)
 {
+  struct dev_msg_t* msg;
   if (_IOC_TYPE(cmd) != LCD_IOC_TYPE) return -ENOTTY;
   switch (cmd) {
     case LCD_IOC_HELLO:
       printk(KERN_WARNING "hello\n");
+      break;
+    case LCD_IOC_WRITE:
+      msg = (struct dev_msg_t*) arg;
+      copy_from_user(dev_msg.data, msg->data, 99);
+      printk("write %s\n", dev_msg.data);
+      break;
+    case LCD_IOC_READ:
+      msg = (struct dev_msg_t*) arg;
+      copy_to_user(msg->data, dev_msg.data, 99);
       break;
     default:
       return -ENOTTY;
@@ -125,6 +142,7 @@ static int lcd_init(void)
   }
   // initialize the value to be X
   *lcd_data = '\0';
+  dev_msg.data[99] = '\0';
   printk(KERN_ALERT "This is a lcd device module\n");
   return 0;
 }
