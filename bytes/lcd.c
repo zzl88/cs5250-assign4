@@ -8,6 +8,7 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 #include <linux/ioctl.h>
+#include <linux/string.h>
 
 struct dev_msg_t {
   char data[100];
@@ -19,6 +20,7 @@ struct dev_msg_t {
 #define LCD_IOC_HELLO _IO(LCD_IOC_TYPE, 1)
 #define LCD_IOC_WRITE _IOW(LCD_IOC_TYPE, 2, struct dev_msg_t)
 #define LCD_IOC_READ _IOR(LCD_IOC_TYPE, 3, struct dev_msg_t)
+#define LCD_IOC_WR _IOWR(LCD_IOC_TYPE, 4, struct dev_msg_t)
 
 /* forward declaration */
 int lcd_open(struct inode *inode, struct file *filep);
@@ -56,6 +58,7 @@ int lcd_release(struct inode *inode, struct file *filep)
 long lcd_ioctl(struct file* filep, unsigned int cmd, unsigned long arg)
 {
   struct dev_msg_t* msg;
+  struct dev_msg_t tmp;
   if (_IOC_TYPE(cmd) != LCD_IOC_TYPE) return -ENOTTY;
   switch (cmd) {
     case LCD_IOC_HELLO:
@@ -70,6 +73,13 @@ long lcd_ioctl(struct file* filep, unsigned int cmd, unsigned long arg)
       msg = (struct dev_msg_t*) arg;
       copy_to_user(msg->data, dev_msg.data, 99);
       break;
+    case LCD_IOC_WR:
+      msg = (struct dev_msg_t*) arg;
+      copy_from_user(tmp.data, msg->data, 99);
+      copy_to_user(msg->data, dev_msg.data, 99);
+      strncpy(dev_msg.data, tmp.data, 99);
+      printk("LCD_IOC_WR dev_msg = %s\n", dev_msg.data);
+      break;  
     default:
       return -ENOTTY;
   }

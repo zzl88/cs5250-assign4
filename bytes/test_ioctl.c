@@ -11,6 +11,7 @@ struct dev_msg_t {
 #define LCD_IOC_HELLO _IO(LCD_IOC_TYPE,   1) 
 #define LCD_IOC_WRITE _IOW(LCD_IOC_TYPE, 2, struct dev_msg_t)
 #define LCD_IOC_READ _IOR(LCD_IOC_TYPE, 3, struct dev_msg_t)
+#define LCD_IOC_WR _IOWR(LCD_IOC_TYPE, 4, struct dev_msg_t)
 
 void test()
 { 
@@ -28,10 +29,19 @@ void test()
 
   strcpy(dev_msg.data, "ioctl_write");
   k = ioctl(lcd, LCD_IOC_WRITE, &dev_msg);
-  printf("write result = %d\n", k);
+  printf("write result = %d msg = %s\n", k, dev_msg.data);
 
   memset(dev_msg.data, 0, sizeof(dev_msg.data));
   printf("cleara msg = %s\n", dev_msg.data);
+  k = ioctl(lcd, LCD_IOC_READ, &dev_msg);
+  printf("read result = %d msg = %s\n", k, dev_msg.data);
+
+  strcpy(dev_msg.data, "ioctl_exchange");
+  printf("before exchange msg = %s\n", dev_msg.data);
+  k = ioctl(lcd, LCD_IOC_WR, &dev_msg);
+  printf("exchange result = %d msg = %s\n", k, dev_msg.data);
+
+  memset(dev_msg.data, 0, sizeof(dev_msg.data));
   k = ioctl(lcd, LCD_IOC_READ, &dev_msg);
   printf("read result = %d msg = %s\n", k, dev_msg.data);
 } 
