@@ -95,7 +95,7 @@ loff_t lcd_llseek(struct file* filep, loff_t offset, int whence)
       break;
     case 1: new_pos = filep->f_pos + offset;  // SEEK_CUR
       break;
-    case 2: new_pos = DEV_SIZE + offset;  // SEEK_END
+    case 2: new_pos = stored + offset;  // SEEK_END
       break;
     default: return -EINVAL;
   }
